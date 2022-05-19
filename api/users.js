@@ -23,8 +23,8 @@ router.post('/',function (req, res, next) {
 router.post('/login',function (req, res, next) {
     if (req.body && req.body.email && req.body.password) {
         try {
-            res.status(201).send({
-                id: `PRETEND TO GIVE ID`
+            res.status(200).send({
+                token: `PRETEND TO GIVE TOKEN`
             })
         } 
         catch (err) {
@@ -44,7 +44,7 @@ router.post('/login',function (req, res, next) {
 router.get('/:userId',function (req, res, next) {
     // PRETEND THIS IS CODE FINDING THE USER 
     // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF USER EXISTS IN THE DATABASE
-    res.status(201).send({  
+    res.status(200).send({  
             name: "example",
             email: "examplej@oregonstate.edu",
             password: "example2",
