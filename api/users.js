@@ -1,15 +1,16 @@
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { userSchema } = require('../models/user')
+const { userSchema, checkEmailUnique } = require('../models/user')
 
 const router = Router()
 
 // Create new User
-router.post('/',function (req, res, next) {
-    if (validateAgainstSchema(req.body, userSchema)) {
+router.post('/', async function (req, res, next) {
+    const emailCheck = await checkEmailUnique(req.body.email)
+    if (validateAgainstSchema(req.body, userSchema) && emailCheck) {
         res.status(201).send({
-            id: `PRETEND TO GIVE ID`
+            id: `PRETEND TO GIVE ID`,
         })
     } 
     else {
