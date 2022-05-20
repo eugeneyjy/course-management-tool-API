@@ -1,7 +1,7 @@
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { userSchema, checkEmailUnique } = require('../models/user')
+const { userSchema, checkEmailUnique, insertNewUser } = require('../models/user')
 
 const router = Router()
 
@@ -9,8 +9,9 @@ const router = Router()
 router.post('/', async function (req, res, next) {
     const emailCheck = await checkEmailUnique(req.body.email)
     if (validateAgainstSchema(req.body, userSchema) && emailCheck) {
+        const id = await insertNewUser(req.body)
         res.status(201).send({
-            id: `PRETEND TO GIVE ID`,
+            id: id
         })
     } 
     else {

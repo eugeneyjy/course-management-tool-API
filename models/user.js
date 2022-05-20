@@ -1,6 +1,6 @@
 const { ObjectId } = require('mongodb')
 const { getDbInstance } = require('../lib/mongo')
-
+const { extractValidFields } = require('../lib/validation')
 
 
 
@@ -26,4 +26,12 @@ exports.checkEmailUnique = async function checkEmailUnique (email) {
     else {
         return true
     }
+}
+
+exports.insertNewUser = async function insertNewUser(newUser) {
+    const db = getDbInstance()
+    const collection = db.collection('users')
+    user = extractValidFields(newUser, userSchema)
+    const result = await collection.insertOne(user)
+    return result.insertedId
 }
