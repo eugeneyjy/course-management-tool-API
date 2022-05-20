@@ -35,3 +35,16 @@ exports.insertNewUser = async function insertNewUser(newUser) {
     const result = await collection.insertOne(user)
     return result.insertedId
 }
+
+exports.getUserById = async function getUserById(userId) {
+    const db = getDbInstance()
+    const collection = db.collection('users')
+    try {
+        const user = await collection.aggregate([
+            { $match: { _id: new ObjectId(userId) } }
+        ]).toArray()
+        return user[0]
+    } catch (e) {
+        return null
+    }
+}

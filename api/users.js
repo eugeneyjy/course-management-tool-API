@@ -1,7 +1,7 @@
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { userSchema, checkEmailUnique, insertNewUser } = require('../models/user')
+const { userSchema, checkEmailUnique, insertNewUser, getUserById } = require('../models/user')
 
 const router = Router()
 
@@ -43,19 +43,21 @@ router.post('/login',function (req, res, next) {
 })
 
 // Fetch data about a specific user
-router.get('/:userId',function (req, res, next) {
-    // PRETEND THIS IS CODE FINDING THE USER 
-    // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF USER EXISTS IN THE DATABASE
-    res.status(200).send({  
-            name: "example",
-            email: "examplej@oregonstate.edu",
-            password: "example2",
-            role: "student" 
-    })
-    // PRETEND THIS IS THE ELSE PART
-    // res.status(404).send({
-    //     error: "Specified userId not found."
-    // })
+router.get('/:userId', async function (req, res, next) {
+    const user = await getUserById(req.params.userId)
+    if (user) {
+        res.status(200).send({
+            name: user.name,
+            email: user.email,
+            password: user.password,
+            role: user.role
+        })
+    }
+    else {
+        res.status(404).send({
+            error: "Specified userId not found."
+        })
+    }
 })
 
 
