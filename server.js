@@ -1,6 +1,7 @@
 const express = require('express')
 
 const api = require('./api')
+const { connectToDb } = require('./lib/mongo')
 
 const app = express()
 const port = process.env.PORT || 8000
@@ -17,9 +18,9 @@ app.use(function (req, res, next) {
     next()
 })
 
-app.listen(port, function () {
-    console.log("== Server is listening on port:", port)
-})
+// app.listen(port, function () {
+//     console.log("== Server is listening on port:", port)
+// })
 
 app.use('/', api)
 
@@ -29,8 +30,15 @@ app.use('*', function (req, res, next) {
   })
 })
 
-// connectToDb(function () {
-//   app.listen(port, function () {
-//     console.log("== Server is running on port", port)
-//   })
-// })
+app.use('*', function (err, req, res, next) {
+  console.error("== Error:", err)
+  res.status(500).send({
+      err: "Server error.  Please try again later."
+  })
+})
+
+connectToDb(function () {
+  app.listen(port, function () {
+      console.log("== Server is listening on port:", port)
+  })
+})
