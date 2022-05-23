@@ -3,7 +3,7 @@ const { Router } = require('express')
 // const { } = require('../lib/validation')
 // const {} = require('../models/course')
 const { validateAgainstSchema } = require('../lib/validation')
-const { courseSchema, insertNewCourse } = require('../models/course')
+const { courseSchema, insertNewCourse, getCourseById, updateCourseById } = require('../models/course')
 
 
 const router = Router()
@@ -17,7 +17,6 @@ router.get('/', function (req, res, next) {
 
 // Create a new course.
 router.post('/', async function (req, res, next) {
-    console.log("WE HERE OIN POST")
     if (validateAgainstSchema(req.body, courseSchema)) {
         const id = await insertNewCourse(req.body)
         res.status(201).send({
@@ -26,23 +25,52 @@ router.post('/', async function (req, res, next) {
     } 
     else {
         res.status(400).send({
-            error: "The request body was either not present or did not contain a valid User object"
+            error: "The request body was either not present or did not contain a course object"
         })
     }
 })
 
 // Fetch data about a specific Course.
-router.get('/:courseId',function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+router.get('/:courseId', async function (req, res, next) {
+    const course = await getCourseById(req.params.courseId)
+    if (course) {
+        res.status(200).send({
+            subject: course.subject,
+            number: course.number,
+            title: course.title,
+            term: course.term,
+            instructorId: course.instructorId
+        })
+    }
+    else {
+        res.status(404).send({
+            error: "Specified courseId not found."
+        })
+    }
 })
 
 // Update data for a specific Course.
-router.patch('/:courseId',function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+router.patch('/:courseId', async function (req, res, next) {
+    const course = await getCourseById(req.params.courseId)
+    if(course === null){
+        res.status(404).json({
+            error: "Specified courseId not found."
+        })
+    }
+    if (validateAgainstSchema(req.body, courseSchema)) {
+        const updateSuccessful = await updateCourseById(req.params.courseId, req.body)
+        if (updateSuccessful) {
+        res.status(200).send()
+        } 
+        else {
+            next()
+        }
+    }
+    else {
+        res.status(400).json({
+            error: "Request body is not a valid course object"
+        })
+    }
 })
 
 // Remove a specific Course from the database.

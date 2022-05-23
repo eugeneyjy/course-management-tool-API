@@ -1,15 +1,16 @@
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { assignmentSchema } = require('../models/assignment')
+const { assignmentSchema, insertNewAssignment, getAssignmentById } = require('../models/assignment')
 
 const router = Router()
 
 // Create a new Assignment.
-router.post('/',function (req, res, next) {
+router.post('/', async function (req, res, next) {
     if (validateAgainstSchema(req.body, assignmentSchema)) {
+        const id = await insertNewAssignment(req.body)
         res.status(201).send({
-            id: `PRETEND TO GIVE ID`
+            id: id
         })
     } 
     else {
@@ -20,19 +21,21 @@ router.post('/',function (req, res, next) {
 })
 
 // Fetch data about a specific Assignment.
-router.get('/:assignmentId',function (req, res, next) {
-    // PRETEND THIS IS CODE FINDING THE ASSIGNMENT
-    // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF ASSIGNMENT EXISTS IN THE DATABASE
-    res.status(200).send({  
-        courseId: 111111,
-        title: "Assignment 3 Example",
-        points: 1111111,
-        due: "2022-06-14T17:00:00-07:00"
-    })
-    // PRETEND THIS IS THE ELSE PART
-    // res.status(404).send({
-    //     error: "Specified assignmentId not found."
-    // })
+router.get('/:assignmentId', async function (req, res, next) {
+    const assignment = await getAssignmentById(req.params.assignmentId)
+    if (assignment) {
+        res.status(200).send({
+            courseId: assignment.courseId,
+            title: assignment.title,
+            points: assignment.points,
+            due: assignment.due
+        })
+    }
+    else {
+        res.status(404).send({
+            error: "Specified assignmentId not found."
+        })
+    }
 })
 
 // Update data for a specific Assignment.
