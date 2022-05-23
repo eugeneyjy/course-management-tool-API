@@ -2,21 +2,33 @@ const { Router } = require('express')
 
 // const { } = require('../lib/validation')
 // const {} = require('../models/course')
+const { validateAgainstSchema } = require('../lib/validation')
+const { courseSchema, insertNewCourse } = require('../models/course')
+
 
 const router = Router()
 
 // Fetch the list of all courses.
 router.get('/', function (req, res, next) {
     res.status(201).send({
-        msg: `REQUEST RECEIVED`
+        msg: `REQUEST RECEIVEDd`
     })
 })
 
 // Create a new course.
-router.post('/',function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+router.post('/', async function (req, res, next) {
+    console.log("WE HERE OIN POST")
+    if (validateAgainstSchema(req.body, courseSchema)) {
+        const id = await insertNewCourse(req.body)
+        res.status(201).send({
+            id: id
+        })
+    } 
+    else {
+        res.status(400).send({
+            error: "The request body was either not present or did not contain a valid User object"
+        })
+    }
 })
 
 // Fetch data about a specific Course.
