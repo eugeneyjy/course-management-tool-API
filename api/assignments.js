@@ -1,7 +1,7 @@
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { assignmentSchema, insertNewAssignment, getAssignmentById } = require('../models/assignment')
+const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
 
 const router = Router()
 
@@ -39,19 +39,25 @@ router.get('/:assignmentId', async function (req, res, next) {
 })
 
 // Update data for a specific Assignment.
-router.patch('/:assignmentId',function (req, res, next) {
-    if (req.body) {
-        // PRETEND THIS IS CODE FINDING THE ASSIGNMENT
-        // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF ASSIGNMENT EXISTS IN THE DATABASE
-        res.status(200).send({})
-        // PRETEND THIS IS THE ELSE PART
-        // res.status(404).send({
-        //     error: "Specified assignmentId not found."
-        // })
-    } 
+router.patch('/:assignmentId', async function (req, res, next) {
+    const assignment = await getAssignmentById(req.params.assignmentId)
+    if(assignment === null){
+        res.status(404).json({
+            error: "Specified courseId not found."
+        })
+    }
+    if (validateAgainstSchema(req.body, assignmentSchema)) {
+        const updateSuccessful = await updateAssignmentById(req.params.assignmentId, req.body)
+        if (updateSuccessful) {
+        res.status(200).send()
+        } 
+        else {
+            next()
+        }
+    }
     else {
-        res.status(400).send({
-            error: "The request body was not present"
+        res.status(400).json({
+            error: "Request body is not a valid course object"
         })
     }
 })

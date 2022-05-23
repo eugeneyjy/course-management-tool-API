@@ -37,3 +37,24 @@ exports.getAssignmentById = async function getAssignmentById(assignmentId) {
         return null
     }
 }
+
+exports.updateAssignmentById = async function updateAssignmentById(assignmentId, assignment) {
+    const courseValues = {
+        courseId: assignment.courseId,
+        title: assignment.title,
+        points: assignment.points,
+        due: assignment.due
+    }
+    const db = getDbInstance()
+    const collection = db.collection('assignments')
+    try {
+        const result = await collection.replaceOne(
+            { _id: new ObjectId(assignmentId) },
+            courseValues
+        )
+        return result.matchedCount > 0;
+    } catch(e)
+    {
+        return null
+    }
+}
