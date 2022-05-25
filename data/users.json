@@ -1,0 +1,38 @@
+[
+{
+  "name": "Jane Doe",
+  "email": "doej@oregonstate.edu",
+  "password": "password",
+  "role": "student"
+},
+{
+  "name": "Fernando Campos",
+  "email": "camposfe@oregonstate.edu",
+  "password": "password",
+  "role": "student"
+},
+{
+    "name": "Miss Student",
+    "email": "student@oregonstate.edu",
+    "password": "password",
+    "role": "student"  
+},
+{
+    "name": "Mr.Instructor",
+    "email": "mri@oregonstate.edu",
+    "password": "password",
+    "role": "instructor"  
+},
+{
+    "name": "Mrs.Instructor",
+    "email": "mrsi@oregonstate.edu",
+    "password": "password",
+    "role": "instructor"  
+},
+{
+    "name": "admin",
+    "email": "admin@oregonstate.edu",
+    "password": "password",
+    "role": "admin"  
+}
+]
