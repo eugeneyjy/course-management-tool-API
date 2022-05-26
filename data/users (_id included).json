@@ -1,0 +1,49 @@
+[{
+  "_id": {
+    "$oid": "628ebb5b706fe1c62cacd758"
+  },
+  "name": "Jane Doe",
+  "email": "doej@oregonstate.edu",
+  "password": "password",
+  "role": "student"
+},{
+  "_id": {
+    "$oid": "628ebb5b706fe1c62cacd759"
+  },
+  "name": "Fernando Campos",
+  "email": "camposfe@oregonstate.edu",
+  "password": "password",
+  "role": "student"
+},{
+  "_id": {
+    "$oid": "628ebb5b706fe1c62cacd75a"
+  },
+  "name": "Miss Student",
+  "email": "student@oregonstate.edu",
+  "password": "password",
+  "role": "student"
+},{
+  "_id": {
+    "$oid": "628ebb5b706fe1c62cacd75b"
+  },
+  "name": "Mr.Instructor",
+  "email": "mri@oregonstate.edu",
+  "password": "password",
+  "role": "instructor"
+},{
+  "_id": {
+    "$oid": "628ebb5b706fe1c62cacd75c"
+  },
+  "name": "Mrs.Instructor",
+  "email": "mrsi@oregonstate.edu",
+  "password": "password",
+  "role": "instructor"
+},{
+  "_id": {
+    "$oid": "628ebb5b706fe1c62cacd75d"
+  },
+  "name": "admin",
+  "email": "admin@oregonstate.edu",
+  "password": "password",
+  "role": "admin"
+}]
