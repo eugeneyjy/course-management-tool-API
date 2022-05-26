@@ -1,0 +1,21 @@
+[{
+  "_id": {
+    "$oid": "628ec352706fe1c62cacd76f"
+  },
+  "subject": "CS",
+  "number": "493",
+  "title": "Cloud Application Development",
+  "term": "sp22",
+  "instructorId": "628ebb5b706fe1c62cacd75b",
+  "students": []
+},{
+  "_id": {
+    "$oid": "628ec352706fe1c62cacd770"
+  },
+  "subject": "CS",
+  "number": "331",
+  "title": "Intro to Artificial Intelligence",
+  "term": "sp22",
+  "instructorId": "628ebb5b706fe1c62cacd75c",
+  "students": []
+}]
