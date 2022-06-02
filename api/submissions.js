@@ -44,8 +44,8 @@ router.post('/', upload.single('file'), async function (req, res, next) {
                 id: id,
                 links: {
                   assignment: `/assignments/${req.body.assignmentId}`,
-                  student: `/user/${req.body.studentId}`,
-                  submission: `/submission/${id}`
+                  student: `/users/${req.body.studentId}`,
+                  submission: `/submissions/${id}`
                 }
             })
         } catch (err) {
