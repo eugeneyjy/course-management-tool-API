@@ -1,9 +1,41 @@
 const { Router } = require('express')
+const multer = require('multer')
+const crypto = require('crypto')
+const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require('../lib/validation')
 const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
 
 const router = Router()
+
+const fileTypes = {
+    'application/pdf': 'pdf',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.ms-powerpoint': 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+    'application/vnd.rar': 'rar',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/zip': 'zip',
+    'text/plain': 'txt',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+}
+
+const upload = multer({
+    storage: multer.diskStorage({
+      destination: `${__dirname}/uploads`,
+      filename: function (req, file, callback) {
+        const ext = fileTypes[file.mimetype]
+        const filename = crypto.pseudoRandomBytes(16).toString('hex')
+        callback(null, `${filename}.${ext}`)
+      }
+    }),
+    fileFilter: function (req, file, callback) {
+      callback(null, !!fileTypes[file.mimetype])
+    }
+})
 
 // Create a new Assignment.
 router.post('/', async function (req, res, next) {
@@ -95,38 +127,11 @@ router.get('/:assignmentId/submissions',function (req, res, next) {
 })
 
 // Create a new Submission for an Assignment.
-router.post('/:assignmentId/submissions',function (req, res, next) {
-    // THIS IS GONNA REQUIRE MULTIPART/FORMDATA SO IGNORE FOR NOW
+router.post('/:assignmentId/submissions', upload.single('file'),function (req, res, next) {
+    console.log("== req.file: ",req.file)
     res.status(201).send({
         msg: `REQUEST RECEIVED`
     })
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = router;
