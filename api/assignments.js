@@ -5,23 +5,10 @@ const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require('../lib/validation')
 const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
+const { submissionSchema, insertNewSubmission } = require('../models/submission')
+const { fileTypes } = require('../lib/fileTypes')
 
 const router = Router()
-
-const fileTypes = {
-    'application/pdf': 'pdf',
-    'application/msword': 'doc',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-    'application/vnd.ms-powerpoint': 'ppt',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
-    'application/vnd.rar': 'rar',
-    'application/vnd.ms-excel': 'xls',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-    'application/zip': 'zip',
-    'text/plain': 'txt',
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-}
 
 const upload = multer({
     storage: multer.diskStorage({
@@ -127,11 +114,47 @@ router.get('/:assignmentId/submissions',function (req, res, next) {
 })
 
 // Create a new Submission for an Assignment.
-router.post('/:assignmentId/submissions', upload.single('file'),function (req, res, next) {
-    console.log("== req.file: ",req.file)
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+router.post('/:assignmentId/submissions', upload.single('file'), async function (req, res, next) {
+    if(validateAgainstSchema(req.body, submissionSchema)) {
+        try {
+            // Submission object, exclude grade. Grade should only be entered when update.
+            const submission = {
+                assignmentId: req.body.assignmentId,
+                studentId: req.body.studentId,
+                timestamp: req.body.timestamp,
+                path: req.file.path,
+                filename: req.file.filename,
+                mimetype: req.file.mimetype
+            }
+            const id = await insertNewSubmission(submission)
+            // Remove local temp file from multer
+            await fs.unlink(req.file.path)
+
+            res.status(201).send({
+                id: id,
+                links: {
+                  assignment: `/assignments/${req.body.assignmentId}`,
+                  student: `/user/${req.body.studentId}`
+                }
+            })
+        } catch (err) {
+            // Catch err when assignment with :assignmentId is not present
+            // TODO: Maybe put custom error into enum
+            if(err === 'Assignment not found') {
+                res.status(404).send({
+                    error: `Assignment with id: ${req.params.assignmentId} not found`
+                })
+            } else {
+                res.status(500).send({
+                    error: "Error inserting submission file into DB.  Please try again later."
+                })
+            }
+        }
+    } else {
+        res.status(400).send({
+            error: "Request body is not a valid submission object"
+        })
+    }
 })
 
 module.exports = router;
