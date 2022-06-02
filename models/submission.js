@@ -46,5 +46,17 @@ exports.insertNewSubmission = async function insertNewSubmission(submission) {
                 } 
             })
     })
+}
 
+exports.getSubmissionById = async function(id) {
+    const db = getDbInstance()
+    const bucket = new GridFSBucket(db, { bucketName: 'submissions' })
+    if (!ObjectId.isValid(id)) {
+        return null
+    } else {
+        const results = await bucket
+            .find({ _id: new ObjectId(id) })
+            .toArray()
+        return results[0]
+    }
 }

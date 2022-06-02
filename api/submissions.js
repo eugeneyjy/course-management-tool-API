@@ -5,7 +5,7 @@ const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require("../lib/validation");
 const { fileTypes } = require("../lib/fileTypes");
-const { submissionSchema, insertNewSubmission } = require("../models/submission");
+const { submissionSchema, insertNewSubmission, getSubmissionById } = require("../models/submission");
 
 const router = Router()
 
@@ -66,6 +66,33 @@ router.post('/', upload.single('file'), async function (req, res, next) {
             error: "Request body is not a valid submission object"
         })
     }
+})
+
+router.get('/:submissionId', async function(req, res, next) {
+    try {
+        const submission = await getSubmissionById(req.params.submissionId)
+        if (submission) {
+          const resBody = {
+            _id: submission._id,
+            assignmentId: submission.metadata.assignmentId,
+            studentId: submission.metadata.studentId,
+            url: `/media/submissions/${submission.filename}`,
+            mimetype: submission.metadata.mimetype,
+            link: {
+                assignment: `/assignments/${submission.metadata.assignmentId}`,
+                student: `/users/${submission.metadata.studentId}`
+            }
+          }
+          res.status(200).send(resBody)
+        } else {
+          next()
+        }
+      } catch (err) {
+        console.error(err)
+        res.status(500).send({
+            error: "Unable to fetch submission.  Please try again later."
+        })
+      }
 })
 
 module.exports = router
