@@ -1,9 +1,28 @@
 const { Router } = require('express')
+const multer = require('multer')
+const crypto = require('crypto')
+const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require('../lib/validation')
 const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
+const { submissionSchema, insertNewSubmission, getSubmissionsByAssignmentId, getSubmissionsByAidAndSid } = require('../models/submission')
+const { fileTypes } = require('../lib/fileTypes')
 
 const router = Router()
+
+const upload = multer({
+    storage: multer.diskStorage({
+      destination: `${__dirname}/uploads`,
+      filename: function (req, file, callback) {
+        const ext = fileTypes[file.mimetype]
+        const filename = crypto.pseudoRandomBytes(16).toString('hex')
+        callback(null, `${filename}.${ext}`)
+      }
+    }),
+    fileFilter: function (req, file, callback) {
+      callback(null, !!fileTypes[file.mimetype])
+    }
+})
 
 // Create a new Assignment.
 router.post('/', async function (req, res, next) {
@@ -74,59 +93,33 @@ router.delete('/:assignmentId',function (req, res, next) {
 })
 
 // Fetch the list of all Submissions for an Assignment.
-router.get('/:assignmentId/submissions',function (req, res, next) {
-    // PRETEND THIS IS CODE FINDING LIST OF SUBMISSIONS
-    // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF ASSIGNMENT EXISTS IN THE DATABASE
-    res.status(201).send({
-        submissions: [
-            {
-              "assignmentId": 123,
-              "studentId": 123,
-              "timestamp": "2022-06-14T17:00:00-07:00",
-              "grade": 94.5,
-              "file": "string"
+// TODO: Implement pagination
+router.get('/:assignmentId/submissions', async function (req, res, next) {
+    try {
+        const assignmentId = req.params.assignmentId
+        const studentId = req.query.studentId
+        const assignment = await getAssignmentById(assignmentId)
+        if (assignment) {
+            let submissions = null
+            if(studentId) {
+                submissions = await getSubmissionsByAidAndSid(assignmentId, studentId)
+            } else {
+                submissions = await getSubmissionsByAssignmentId(assignmentId)
             }
-          ]
-    })
-    // PRETEND THIS IS THE ELSE PART
-    // res.status(404).send({
-    //     error: "Specified assignmentId not found."
-    // })
+            res.status(200).send({ submissions })
+        } else {
+            res.status(404).send({
+                error: "Specified assignmentId not found."
+            }) 
+        }
+    } catch (err) {
+        if (err === 'ObjectIdError') {
+            res.status(400).send({
+                error: 'Invalid ID format for assignmentId or studentId.'
+            })
+        }
+        next(err)
+    }
 })
-
-// Create a new Submission for an Assignment.
-router.post('/:assignmentId/submissions',function (req, res, next) {
-    // THIS IS GONNA REQUIRE MULTIPART/FORMDATA SO IGNORE FOR NOW
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = router;
