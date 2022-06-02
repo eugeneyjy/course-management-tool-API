@@ -1,0 +1,28 @@
+[{
+  "_id": {
+    "$oid": "628ec300706fe1c62cacd768"
+  },
+  "assignmentId": "628ec390706fe1c62cacd773",
+  "studentId": "628ebb5b706fe1c62cacd758",
+  "timestamp": "2022-06-14T17:00:00-07:00",
+  "grade": 10,
+  "file": ""
+},{
+  "_id": {
+    "$oid": "628ec300706fe1c62cacd769"
+  },
+  "assignmentId": "628ec390706fe1c62cacd774",
+  "studentId": "628ebb5b706fe1c62cacd759",
+  "timestamp": "2022-06-14T17:00:00-07:00",
+  "grade": 100,
+  "file": ""
+},{
+  "_id": {
+    "$oid": "628ec300706fe1c62cacd76a"
+  },
+  "assignmentId": "628ec390706fe1c62cacd774",
+  "studentId": "628ebb5b706fe1c62cacd75a",
+  "timestamp": "2022-06-14T17:00:00-07:00",
+  "grade": 90,
+  "file": ""
+}]
