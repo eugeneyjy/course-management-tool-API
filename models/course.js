@@ -26,6 +26,13 @@ exports.insertNewCourse = async function insertNewCourse(newCourse) {
     return result.insertedId
 }
 
+exports.getAllCourses = async function getAllCourses() {
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const courses = await collection.find().toArray()
+    return courses
+}
+
 exports.getCourseById = async function getCourseById(courseId) {
     const db = getDbInstance()
     const collection = db.collection('courses')
@@ -41,7 +48,7 @@ exports.getCourseById = async function getCourseById(courseId) {
 
 exports.updateCourseById = async function updateCourseById(courseId, course) {
     const courseValues = {
-        subject:  course.subject,
+        subject: course.subject,
         number: course.number,
         title: course.title,
         term: course.term,
@@ -55,8 +62,81 @@ exports.updateCourseById = async function updateCourseById(courseId, course) {
             courseValues
         )
         return result.matchedCount > 0;
-    } catch(e)
-    {
+    } catch (e) {
         return null
     }
+}
+
+exports.getCorrectData = async function getCorrectData(data) {
+    for (var i = 0; i < data.length; i++) {
+        temp = {
+            subject: data[i].subject,
+            number: data[i].number,
+            title: data[i].title,
+            term: data[i].term,
+            instructorId: data[i].instructorId
+        }
+        data[i] = temp;
+    }
+    return data
+}
+
+exports.getSubjectData = async function getSubjectData(subject) {
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const courses = await collection.find({ "subject": subject }).toArray()
+    for (var i = 0; i < courses.length; i++) {
+        temp = {
+            subject: courses[i].subject,
+            number: courses[i].number,
+            title: courses[i].title,
+            term: courses[i].term,
+            instructorId: courses[i].instructorId
+        }
+        courses[i] = temp;
+    }
+    return courses
+}
+
+exports.getNumberData = async function getNumberData(number) {
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const courses = await collection.find({ "number": number }).toArray()
+    for (var i = 0; i < courses.length; i++) {
+        temp = {
+            subject: courses[i].subject,
+            number: courses[i].number,
+            title: courses[i].title,
+            term: courses[i].term,
+            instructorId: courses[i].instructorId
+        }
+        courses[i] = temp;
+    }
+    return courses
+}
+
+exports.getTermData = async function getTermData(term) {
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const courses = await collection.find({ "term": term }).toArray()
+    for (var i = 0; i < courses.length; i++) {
+        temp = {
+            subject: courses[i].subject,
+            number: courses[i].number,
+            title: courses[i].title,
+            term: courses[i].term,
+            instructorId: courses[i].instructorId
+        }
+        courses[i] = temp;
+    }
+    return courses
+}
+
+exports.getAssignmentsByCourseId = async function getAssignmentsByCourseId(id) {
+    const db = getDbInstance()
+    const collection = db.collection('assignments')
+    const assignments = await collection.aggregate([
+        { $match: { _id: new ObjectId(id) } }
+    ]).toArray()
+    return assignments
 }
