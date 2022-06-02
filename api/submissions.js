@@ -5,7 +5,7 @@ const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require("../lib/validation");
 const { fileTypes } = require("../lib/fileTypes");
-const { submissionSchema, insertNewSubmission, getSubmissionById } = require("../models/submission");
+const { submissionSchema, insertNewSubmission, getSubmissionById, updateSubmissionGradeById } = require("../models/submission");
 
 const router = Router()
 
@@ -93,6 +93,33 @@ router.get('/:submissionId', async function(req, res, next) {
             error: "Unable to fetch submission.  Please try again later."
         })
       }
+})
+
+router.patch('/:submissionId', async function (req, res, next) {
+    try {
+        if (req.body && req.body.grade) {
+            const submissionId = req.params.submissionId
+            const success = await updateSubmissionGradeById(submissionId, req.body.grade)
+            if (success) {
+                res.status(204).send()
+            } else {
+                res.status(404).send({
+                    error: "Specified submissoinId not found"
+                })
+            }
+        } else {
+            res.status(400).send({
+                error: "Request body is not a valid submission patch object"
+            })
+        }
+    } catch (err) {
+        if (err === 'ObjectIdError') {
+            res.status(400).send({
+                error: 'Invalid ID format for submissionId.'
+            })
+        }
+        next(err)
+    }
 })
 
 module.exports = router

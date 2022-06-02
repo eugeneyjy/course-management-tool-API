@@ -111,3 +111,16 @@ exports.getSubmissionsByAidAndSid = async function(assignmentId, studentId) {
         })
         .toArray()
 }
+
+exports.updateSubmissionGradeById = async function(submissionId, grade) {
+    if (!ObjectId.isValid(submissionId)) {
+        throw('ObjectIdError')
+    }
+    const db = getDbInstance()
+    const collection = db.collection('submissions.files')
+    const result = await collection.updateOne(
+        { _id: new ObjectId(submissionId) },
+        { $set: { "metadata.grade": parseFloat(grade).toFixed(2) } }
+    )
+    return result.matchedCount > 0
+}
