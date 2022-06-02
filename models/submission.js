@@ -60,3 +60,54 @@ exports.getSubmissionById = async function(id) {
         return results[0]
     }
 }
+
+exports.getSubmissionsByAssignmentId = async function(assignmentId) {
+    if (!ObjectId.isValid(assignmentId)) {
+        throw('ObjectIdError')
+    }
+    const db = getDbInstance()
+    const collection = db.collection('submissions.files')
+    const projection = {
+        assignmentId: '$metadata.assignmentId',
+        studentId: '$metadata.studentId',
+        timestamp: '$metadata.timestamp',
+        grade: '$metadata.grade',
+        filename: '$filename'
+    }
+    const submissions = await collection
+        .find({ 'metadata.assignmentId': new ObjectId(assignmentId) })
+        .project(projection)
+    return submissions
+        .map(submission => {
+            submission.filename = `/media/submissions/${submission.filename}`
+            return submission
+        })
+        .toArray()
+}
+
+exports.getSubmissionsByAidAndSid = async function(assignmentId, studentId) {
+    if (!ObjectId.isValid(assignmentId) || !ObjectId.isValid(studentId)) {
+        throw('ObjectIdError')
+    }
+    const db = getDbInstance()
+    const collection = db.collection('submissions.files')
+    const projection = {
+        assignmentId: '$metadata.assignmentId',
+        studentId: '$metadata.studentId',
+        timestamp: '$metadata.timestamp',
+        grade: '$metadata.grade',
+        filename: '$filename'
+    }
+    const submissions = await collection
+        .find({
+            'metadata.assignmentId': new ObjectId(assignmentId),
+            'metadata.studentId': new ObjectId(studentId)
+        })
+        .project(projection)
+    return submissions
+        .map(submission => {
+            submission.filename = `/media/submissions/${submission.filename}`
+            return submission
+        })
+        .toArray()
+}
