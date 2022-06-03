@@ -5,7 +5,7 @@ const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require('../lib/validation')
 const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
-const { submissionSchema, insertNewSubmission, getSubmissionsByAssignmentId, getSubmissionsByAidAndSid } = require('../models/submission')
+const { getPaginatedSubmissionsByAidAndSid, getPaginatedSubmissionsByAid } = require('../models/submission')
 const { fileTypes } = require('../lib/fileTypes')
 
 const router = Router()
@@ -100,13 +100,21 @@ router.get('/:assignmentId/submissions', async function (req, res, next) {
         const studentId = req.query.studentId
         const assignment = await getAssignmentById(assignmentId)
         if (assignment) {
-            let submissions = null
+            let paginatedSubmissions = null
+            let page = parseInt(req.query.page) || 1;
+            page = page < 1 ? 1 : page;
+            const countPerPage = 10;
+            const start = (page - 1) * countPerPage;
             if(studentId) {
-                submissions = await getSubmissionsByAidAndSid(assignmentId, studentId)
+                paginatedSubmissions = await getPaginatedSubmissionsByAidAndSid(
+                    assignmentId, studentId, start, countPerPage
+                )
             } else {
-                submissions = await getSubmissionsByAssignmentId(assignmentId)
+                paginatedSubmissions = await getPaginatedSubmissionsByAid(
+                    assignmentId, start, countPerPage
+                )
             }
-            res.status(200).send({ submissions })
+            res.status(200).send(paginatedSubmissions)
         } else {
             res.status(404).send({
                 error: "Specified assignmentId not found."
