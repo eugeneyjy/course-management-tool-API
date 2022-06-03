@@ -17,8 +17,8 @@ exports.insertNewSubmission = async function insertNewSubmission(submission) {
         const assignments = db.collection('assignments')
         assignments.findOne({ _id: new ObjectId(submission.assignmentId) })
             .then(result => {
-                if(result) {
-                    const bucket = new GridFSBucket(db, { bucketName: 'submissions'})
+                if (result) {
+                    const bucket = new GridFSBucket(db, { bucketName: 'submissions' })
                     const metadata = {
                         assignmentId: new ObjectId(submission.assignmentId),
                         studentId: new ObjectId(submission.studentId),
@@ -40,15 +40,15 @@ exports.insertNewSubmission = async function insertNewSubmission(submission) {
                                 { $push: { "submissions": result._id } }
                             )
                             resolve(result._id)
-                        })                
+                        })
                 } else {
                     reject('Assignment not found')
-                } 
+                }
             })
     })
 }
 
-exports.getSubmissionById = async function(id) {
+exports.getSubmissionById = async function (id) {
     const db = getDbInstance()
     const bucket = new GridFSBucket(db, { bucketName: 'submissions' })
     if (!ObjectId.isValid(id)) {
@@ -61,12 +61,14 @@ exports.getSubmissionById = async function(id) {
     }
 }
 
-exports.getSubmissionsByAssignmentId = async function(assignmentId) {
+exports.getPaginatedSubmissionsByAid = async function (assignmentId, start, countPerPage) {
     if (!ObjectId.isValid(assignmentId)) {
-        throw('ObjectIdError')
+        throw ('ObjectIdError')
     }
     const db = getDbInstance()
     const collection = db.collection('submissions.files')
+
+    // Fields to project out after query
     const projection = {
         assignmentId: '$metadata.assignmentId',
         studentId: '$metadata.studentId',
@@ -74,23 +76,64 @@ exports.getSubmissionsByAssignmentId = async function(assignmentId) {
         grade: '$metadata.grade',
         filename: '$filename'
     }
+
+    // Get paginated submissions
     const submissions = await collection
         .find({ 'metadata.assignmentId': new ObjectId(assignmentId) })
+        .sort({ _id: 1 })
+        .skip(start)
+        .limit(countPerPage)
         .project(projection)
-    return submissions
+
+    /*
+     * Reassign submission.filename with url to download file instead
+     * Turn paginated submissions into an array
+     */
+    const submissionsArray = await submissions
         .map(submission => {
             submission.filename = `/media/submissions/${submission.filename}`
             return submission
         })
         .toArray()
+
+    // Count the total number of submissions that match the query
+    const totalCount = await collection.countDocuments({
+        'metadata.assignmentId': new ObjectId(assignmentId),
+    })
+
+    // Compute pagination information
+    const page = (Math.floor(start / countPerPage)) + 1
+    const totalPages = (Math.ceil(totalCount / countPerPage))
+    const links = {}
+    if (page < totalPages) {
+        links.nextPage = `/assignments/${assignmentId}/submissions?page=${page + 1}`
+        links.lastPage = `/assignments/${assignmentId}/submissions?page=${totalPages}`
+    }
+    if (page > 1) {
+        links.prevPage = `/assignments/${assignmentId}/submissions?page=${page - 1}`
+        links.firstPage = `/assignments/${assignmentId}/submissions?page=1`
+    }
+
+    const paginatedSubmissions = {
+        submissions: submissionsArray,
+        pageNumber: page,
+        totalPages: totalPages,
+        pageSize: countPerPage,
+        count: submissionsArray.length,
+        totalCount: totalCount,
+        links: links
+    }
+    return paginatedSubmissions
 }
 
-exports.getSubmissionsByAidAndSid = async function(assignmentId, studentId) {
+exports.getPaginatedSubmissionsByAidAndSid = async function (assignmentId, studentId, start, countPerPage) {
     if (!ObjectId.isValid(assignmentId) || !ObjectId.isValid(studentId)) {
-        throw('ObjectIdError')
+        throw ('ObjectIdError')
     }
     const db = getDbInstance()
     const collection = db.collection('submissions.files')
+
+    // Fields to project out after query
     const projection = {
         assignmentId: '$metadata.assignmentId',
         studentId: '$metadata.studentId',
@@ -98,23 +141,63 @@ exports.getSubmissionsByAidAndSid = async function(assignmentId, studentId) {
         grade: '$metadata.grade',
         filename: '$filename'
     }
+
+    // Get paginated submissions
     const submissions = await collection
         .find({
             'metadata.assignmentId': new ObjectId(assignmentId),
             'metadata.studentId': new ObjectId(studentId)
         })
+        .sort({ _id: 1 })
+        .skip(start)
+        .limit(countPerPage)
         .project(projection)
-    return submissions
+
+    /*
+     * Reassign submission.filename with url to download file instead
+     * Turn paginated submissions into an array
+     */
+    const submissionsArray = await submissions
         .map(submission => {
             submission.filename = `/media/submissions/${submission.filename}`
             return submission
         })
         .toArray()
+
+    // Count the total number of submissions that match the query
+    const totalCount = await collection.countDocuments({
+        'metadata.assignmentId': new ObjectId(assignmentId),
+        'metadata.studentId': new ObjectId(studentId)
+    })
+
+    // Compute pagination information
+    const page = (Math.floor(start / countPerPage)) + 1
+    const totalPages = (Math.ceil(totalCount / countPerPage))
+    const links = {}
+    if (page < totalPages) {
+        links.nextPage = `/assignments/${assignmentId}/submissions?studentId=${studentId}&page=${page + 1}`
+        links.lastPage = `/assignments/${assignmentId}/submissions?studentId=${studentId}&page=${totalPages}`
+    }
+    if (page > 1) {
+        links.prevPage = `/assignments/${assignmentId}/submissions?studentId=${studentId}&page=${page - 1}`
+        links.firstPage = `/assignments/${assignmentId}/submissions?studentId=${studentId}&page=1`
+    }
+
+    const paginatedSubmissions = {
+        submissions: submissionsArray,
+        pageNumber: page,
+        totalPages: totalPages,
+        pageSize: countPerPage,
+        count: submissionsArray.length,
+        totalCount: totalCount,
+        links: links
+    }
+    return paginatedSubmissions
 }
 
-exports.updateSubmissionGradeById = async function(submissionId, grade) {
+exports.updateSubmissionGradeById = async function (submissionId, grade) {
     if (!ObjectId.isValid(submissionId)) {
-        throw('ObjectIdError')
+        throw ('ObjectIdError')
     }
     const db = getDbInstance()
     const collection = db.collection('submissions.files')
