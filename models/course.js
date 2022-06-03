@@ -131,6 +131,13 @@ exports.getTermData = async function getTermData(term) {
     }
     return courses
 }
+exports.deleteCoursesById = async function deleteCoursesById(id) {
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const count = await collection.deleteOne({_id: new ObjectId(id)});
+    console.log(count)
+    return count.deletedCount > 0;
+}
 
 exports.getAssignmentsByCourseId = async function getAssignmentsByCourseId(id) {
     const db = getDbInstance()
@@ -140,3 +147,13 @@ exports.getAssignmentsByCourseId = async function getAssignmentsByCourseId(id) {
     ]).toArray()
     return assignments
 }
+
+exports.updateStudentInCourse = async function updateStudentInCourse(id) {
+
+}
+// exports.getListStudentInCourse = async function getListStudentInCourse(id) {
+//     const db = getDbInstance()
+//     const collection = db.collection('users')
+//     const users = await collection.findOne({_id: new ObjectId(id)})
+//     return users;
+// }

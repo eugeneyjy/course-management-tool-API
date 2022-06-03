@@ -3,7 +3,7 @@ const { Router } = require('express')
 // const { } = require('../lib/validation')
 // const {} = require('../models/course')
 const { validateAgainstSchema } = require('../lib/validation')
-const { courseSchema, insertNewCourse, getCourseById, updateCourseById, getAllCourses, getCorrectData, getSubjectData, getNumberData, getTermData, getAssignmentsByCourseId } = require('../models/course')
+const { courseSchema, insertNewCourse, getCourseById, updateCourseById, getAllCourses, getCorrectData, getSubjectData, getNumberData, getTermData, getAssignmentsByCourseId, deleteCoursesById } = require('../models/course')
 
 
 const router = Router()
@@ -109,16 +109,21 @@ router.patch('/:courseId', async function (req, res, next) {
 })
 
 // Remove a specific Course from the database.
-router.delete('/:courseId', function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+router.delete('/:courseId', async function (req, res, next) {
+    const count = await deleteCoursesById(req.params.courseId)
+    if(count) {
+        res.status(204).end();
+    }
+    else {
+        next();
+    }
 })
 
 // Fetch a list of the students enrolled in the Course.
-router.get('/:courseId/students', function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
+router.get('/:courseId/students', async function (req, res, next) {
+    // const course = await getCourseById(req.params.courseId);
+    res.status(200).send({
+        // student: course.student
     })
 })
 
