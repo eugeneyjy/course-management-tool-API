@@ -93,7 +93,6 @@ router.delete('/:assignmentId',function (req, res, next) {
 })
 
 // Fetch the list of all Submissions for an Assignment.
-// TODO: Implement pagination
 router.get('/:assignmentId/submissions', async function (req, res, next) {
     try {
         const assignmentId = req.params.assignmentId
