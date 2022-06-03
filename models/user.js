@@ -12,7 +12,8 @@ const userSchema = {
     name: { required: true },
     email: { required: true },
     password: { required: true },
-    role: { required: true }
+    role: { required: true },
+    courses: { required: false }
 }
 exports.userSchema = userSchema;
 
@@ -36,7 +37,7 @@ exports.insertNewUser = async function insertNewUser(newUser) {
     return result.insertedId
 }
 
-exports.getUserById = async function getUserById(userId) {
+ async function getUserById(userId) {
     const db = getDbInstance()
     const collection = db.collection('users')
     try {
@@ -48,3 +49,4 @@ exports.getUserById = async function getUserById(userId) {
         return null
     }
 }
+exports.getUserById = getUserById

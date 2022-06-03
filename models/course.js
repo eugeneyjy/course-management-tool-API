@@ -1,6 +1,7 @@
 const { ObjectId } = require('mongodb')
 const { getDbInstance } = require('../lib/mongo')
-const { extractValidFields } = require('../lib/validation')
+const { extractValidFields } = require('../lib/validation');
+const { getUserById } = require('./user');
 
 
 
@@ -14,7 +15,8 @@ const courseSchema = {
     number: { required: true },
     title: { required: true },
     term: { required: true },
-    instructorId: { required: true }
+    instructorId: { required: true },
+    students: {require: false}
 }
 exports.courseSchema = courseSchema;
 
@@ -33,7 +35,7 @@ exports.getAllCourses = async function getAllCourses() {
     return courses
 }
 
-exports.getCourseById = async function getCourseById(courseId) {
+async function getCourseById(courseId) {
     const db = getDbInstance()
     const collection = db.collection('courses')
     try {
@@ -45,6 +47,7 @@ exports.getCourseById = async function getCourseById(courseId) {
         return null
     }
 }
+exports.getCourseById = getCourseById
 
 exports.updateCourseById = async function updateCourseById(courseId, course) {
     const courseValues = {
@@ -148,12 +151,38 @@ exports.getAssignmentsByCourseId = async function getAssignmentsByCourseId(id) {
     return assignments
 }
 
-exports.updateStudentInCourse = async function updateStudentInCourse(id) {
-
+exports.courseEnrollment = async function courseEnrollment(id,studentId) {
+    const db = getDbInstance();
+    const userCollection = db.collection('users');
+    // get classes info for inserting into user table
+    const classes = await getCourseById(id);
+    // insert into user table
+    const enroll = await userCollection.updateOne({_id: new ObjectId(studentId)}, {
+        $addToSet: {
+            courses: {
+                subject: classes.subject,
+                number: classes.number,
+                title: classes.title,
+                term: classes.term,
+            }
+        }
+    });
+    const getStudent = await getUserById(studentId)
+    const courseCollection = db.collection('courses')
+    const addUser = await courseCollection.updateOne({_id: new ObjectId(id)}, {
+        $addToSet: {
+            students: {
+                name: getStudent.name,
+                email: getStudent.email
+            }
+        }
+    })
+    return {enroll,addUser};
 }
-// exports.getListStudentInCourse = async function getListStudentInCourse(id) {
-//     const db = getDbInstance()
-//     const collection = db.collection('users')
-//     const users = await collection.findOne({_id: new ObjectId(id)})
-//     return users;
-// }
+exports.getListStudentInCourse = async function getListStudentInCourse(id) {
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const users = await collection.findOne({_id: new ObjectId(id)})
+    console.log("=========",users)
+    return users;
+}

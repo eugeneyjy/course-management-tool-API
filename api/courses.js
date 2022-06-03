@@ -3,7 +3,7 @@ const { Router } = require('express')
 // const { } = require('../lib/validation')
 // const {} = require('../models/course')
 const { validateAgainstSchema } = require('../lib/validation')
-const { courseSchema, insertNewCourse, getCourseById, updateCourseById, getAllCourses, getCorrectData, getSubjectData, getNumberData, getTermData, getAssignmentsByCourseId, deleteCoursesById } = require('../models/course')
+const { courseSchema, insertNewCourse, getCourseById, updateCourseById, getAllCourses, getCorrectData, getSubjectData, getNumberData, getTermData, getAssignmentsByCourseId, deleteCoursesById, courseEnrollment, getListStudentInCourse } = require('../models/course')
 
 
 const router = Router()
@@ -121,17 +121,38 @@ router.delete('/:courseId', async function (req, res, next) {
 
 // Fetch a list of the students enrolled in the Course.
 router.get('/:courseId/students', async function (req, res, next) {
-    // const course = await getCourseById(req.params.courseId);
-    res.status(200).send({
-        // student: course.student
-    })
+    const course = await getListStudentInCourse(req.params.courseId)
+    if (course) {
+        res.status(200).send({
+            student: course.students
+        })
+    }
+    else {
+        res.status(404).send({
+            error: "Specified courseId not found."
+        })
+    }
 })
 
-// Update enrollment for a Course.
-router.post('/:courseId/students', function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+// Enrollment for a Course.
+// body: studentId
+router.post('/:courseId/students', async function (req, res, next) {
+    try {
+        const enroll = await courseEnrollment(req.params.courseId, req.body.studentId);
+        console.log("ttttttest",enroll)
+        if(enroll.enroll.modifiedCount !== 0 && enroll.addUser.modifiedCount !==0) {
+            res.status(200).send({
+                msg: `Enrolled sucessfully`
+            })
+        }
+        else {
+            res.status(400).send({
+                error: "Trying to enroll the same course"
+            })
+        }
+    }catch(err) {
+        throw err
+    }
 })
 
 // Fetch a CSV file containing list of the students enrolled in the Course.
