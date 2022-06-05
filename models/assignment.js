@@ -58,3 +58,15 @@ exports.updateAssignmentById = async function updateAssignmentById(assignmentId,
         return null
     }
 }
+
+exports.bulkInsertNewAssignments = async function bulkInsertNewAssignments(assignments) {
+    const assignmentsToInsert = assignments.map(assignment => {
+        assignment._id = new ObjectId(assignment._id.$oid)
+        assignment.courseId = new ObjectId(assignment.courseId)
+        return assignment
+    })
+    const db = getDbInstance()
+    const collection = db.collection('assignments')
+    const result = await collection.insertMany(assignmentsToInsert)
+    return result.insertedIds
+}
