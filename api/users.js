@@ -1,7 +1,9 @@
+const bcrypt = require('bcryptjs')
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { userSchema, checkEmailUnique, insertNewUser, getUserById } = require('../models/user')
+const { generateAuthToken } = require('../lib/auth')
+const { userSchema, checkEmailUnique, insertNewUser, getUserByEmail } = require('../models/user')
 
 const router = Router()
 
@@ -22,17 +24,15 @@ router.post('/', async function (req, res, next) {
 })
 
 // Log in User
-router.post('/login',function (req, res, next) {
+router.post('/login', async function (req, res, next) {
     if (req.body && req.body.email && req.body.password) {
-        try {
-            res.status(200).send({
-                token: `PRETEND TO GIVE TOKEN`
-            })
-        } 
-        catch (err) {
-            res.status(500).send({
-              error: "An internal server error occurred."
-            })
+        const user = await getUserByEmail(req.body.email)
+        const authenticated = user && await bcrypt.compare(req.body.password, user.password)
+        if (authenticated) {
+            const authToken = generateAuthToken(user._id)
+            res.status(200).send({ token: authToken })
+        } else {
+            res.status(401).send({ error: "Invalid authentication credentials" })
         }
     } 
     else {
@@ -59,27 +59,5 @@ router.get('/:userId', async function (req, res, next) {
         })
     }
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = router;
