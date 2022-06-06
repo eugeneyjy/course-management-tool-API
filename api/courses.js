@@ -124,7 +124,7 @@ router.get('/:courseId/students', async function (req, res, next) {
     const course = await getListStudentInCourse(req.params.courseId)
     if (course) {
         res.status(200).send({
-            student: course.students
+            student: course
         })
     }
     else {
@@ -138,16 +138,15 @@ router.get('/:courseId/students', async function (req, res, next) {
 // body: studentId
 router.post('/:courseId/students', async function (req, res, next) {
     try {
-        const enroll = await courseEnrollment(req.params.courseId, req.body.studentId);
-        console.log("ttttttest",enroll)
-        if(enroll.enroll.modifiedCount !== 0 && enroll.addUser.modifiedCount !==0) {
+        const result = await courseEnrollment(req.params.courseId, req.body);
+        if(result.length == 0) {
             res.status(200).send({
                 msg: `Enrolled sucessfully`
             })
         }
-        else {
+        else if(result.length != 0) {
             res.status(400).send({
-                error: "Trying to enroll the same course"
+                error: "User " + result + " trying to enroll the same course"
             })
         }
     }catch(err) {
