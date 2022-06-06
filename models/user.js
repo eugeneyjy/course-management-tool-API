@@ -1,12 +1,7 @@
 const { ObjectId } = require('mongodb')
 const { getDbInstance } = require('../lib/mongo')
 const { extractValidFields } = require('../lib/validation')
-
-
-
-
-
-
+const bcrypt = require('bcryptjs')
 
 const userSchema = {
     name: { required: true },
@@ -33,11 +28,12 @@ exports.insertNewUser = async function insertNewUser(newUser) {
     const db = getDbInstance()
     const collection = db.collection('users')
     user = extractValidFields(newUser, userSchema)
+    user.password = await bcrypt.hash(user.password, 8)
     const result = await collection.insertOne(user)
     return result.insertedId
 }
 
- async function getUserById(userId) {
+async function getUserById(userId) {
     const db = getDbInstance()
     const collection = db.collection('users')
     try {
@@ -51,11 +47,19 @@ exports.insertNewUser = async function insertNewUser(newUser) {
 }
 exports.getUserById = getUserById
 
+exports.getUserByEmail = async function getUserByEmail(email) {
+    const db = getDbInstance()
+    const collection = db.collection('users')
+    const user = await collection.findOne({ email: email })
+    return user
+}
+
 exports.bulkInsertNewUsers = async function bulkInsertNewUsers(users) {
-    const usersToInsert = users.map(user => {
+    const usersToInsert = await Promise.all(users.map(async(user) => {
         user._id = new ObjectId(user._id.$oid)
+        user.password = await bcrypt.hash(user.password, 8)
         return user
-    })
+    }))
     const db = getDbInstance()
     const collection = db.collection('users')
     const result = await collection.insertMany(usersToInsert)
