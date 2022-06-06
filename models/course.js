@@ -184,7 +184,7 @@ exports.courseEnrollment = async function courseEnrollment(id, body) {
   }
   return result;
 };
-exports.getListStudentInCourse = async function getListStudentInCourse(id) {
+exports.getListStudentInCourse = async function getListStudentInCourse(id) { 
   const db = getDbInstance();
   const collection =  db.collection("courses");
   const users = await collection.aggregate([
@@ -197,9 +197,6 @@ exports.getListStudentInCourse = async function getListStudentInCourse(id) {
         as: "students",
       },
     },
-  ]);
-  console.log(users[0])
-    
-
-  return users[0];
+  ]).toArray();
+  return users;
 };
