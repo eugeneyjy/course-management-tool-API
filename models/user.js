@@ -50,3 +50,15 @@ exports.insertNewUser = async function insertNewUser(newUser) {
     }
 }
 exports.getUserById = getUserById
+
+exports.bulkInsertNewUsers = async function bulkInsertNewUsers(users) {
+    const usersToInsert = users.map(user => {
+        user._id = new ObjectId(user._id.$oid)
+        return user
+    })
+    const db = getDbInstance()
+    const collection = db.collection('users')
+    const result = await collection.insertMany(usersToInsert)
+    return result.insertedIds
+}
+

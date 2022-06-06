@@ -184,6 +184,7 @@ exports.courseEnrollment = async function courseEnrollment(id, body) {
   }
   return result;
 };
+
 exports.getListStudentInCourse = async function getListStudentInCourse(id) { 
   const db = getDbInstance();
   const collection =  db.collection("courses");
@@ -200,3 +201,15 @@ exports.getListStudentInCourse = async function getListStudentInCourse(id) {
   ]).toArray();
   return users;
 };
+
+exports.bulkInsertNewCourses = async function bulkInsertNewCourses(courses) {
+    const coursesToInsert = courses.map(course => {
+        course._id = new ObjectId(course._id.$oid)
+        course.instructorId = new ObjectId(course.instructorId)
+        return course
+    })
+    const db = getDbInstance()
+    const collection = db.collection('courses')
+    const result = await collection.insertMany(coursesToInsert)
+    return result.insertedIds
+}
