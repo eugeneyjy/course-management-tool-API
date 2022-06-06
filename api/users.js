@@ -2,8 +2,8 @@ const bcrypt = require('bcryptjs')
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { generateAuthToken } = require('../lib/auth')
-const { userSchema, checkEmailUnique, insertNewUser, getUserByEmail } = require('../models/user')
+const { generateAuthToken, requireAuthentication, isUserAdmin } = require('../lib/auth')
+const { userSchema, checkEmailUnique, insertNewUser, getUserByEmail, getUserById } = require('../models/user')
 
 const router = Router()
 
@@ -11,10 +11,27 @@ const router = Router()
 router.post('/', async function (req, res, next) {
     const emailCheck = await checkEmailUnique(req.body.email)
     if (validateAgainstSchema(req.body, userSchema) && emailCheck) {
-        const id = await insertNewUser(req.body)
-        res.status(201).send({
-            id: id
-        })
+        if (req.body.role === 'admin' || req.body.role === 'instructor') {
+            const userId = requireAuthentication(req, res)
+            if (userId) {
+                const admin = await isUserAdmin(userId)
+                if (admin) {
+                    const id = await insertNewUser(req.body)
+                    res.status(201).send({ id: id })
+                } else {
+                    res.status(403).send({
+                        error: "User need to be an Admin in order to create Admin user or Instructor user"
+                    })
+                }
+            } else {
+                res.status(401).send({
+                    error: "Invalid authentication token"
+                })
+            }
+        } else {
+            const id = await insertNewUser(req.body)
+            res.status(201).send({ id: id })
+        }
     } 
     else {
         res.status(400).send({
