@@ -66,3 +66,15 @@ exports.bulkInsertNewUsers = async function bulkInsertNewUsers(users) {
     return result.insertedIds
 }
 
+exports.getUserRole = async function getUserRole(userId) {
+    const db = getDbInstance()
+    const collection = db.collection('users')
+    try {
+        const user = await collection.aggregate([
+            { $match: { _id: new ObjectId(userId) } }
+        ]).toArray()
+        return user[0].role
+    } catch (e) {
+        return null
+    }
+}

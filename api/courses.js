@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { requireAuthentication } = require('../lib/auth')
 
 // const { } = require('../lib/validation')
 // const {} = require('../models/course')
@@ -155,7 +156,7 @@ router.post('/:courseId/students', async function (req, res, next) {
 })
 
 // Fetch a CSV file containing list of the students enrolled in the Course.
-router.get('/:courseId/roster', function (req, res, next) {
+router.get('/:courseId/roster', requireAuthentication, function (req, res, next) {
     res.status(201).send({
         msg: `REQUEST RECEIVED`
     })
