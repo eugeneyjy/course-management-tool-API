@@ -128,13 +128,21 @@ router.patch('/:courseId', requireAuthentication, async function (req, res, next
 })
 
 // Remove a specific Course from the database.
-router.delete('/:courseId', async function (req, res, next) {
-    const count = await deleteCoursesById(req.params.courseId)
-    if(count) {
-        res.status(204).end();
+router.delete('/:courseId', requireAuthentication, async function (req, res, next) {
+    const admin = await isUserAdmin(req.userId)
+    if(admin) {
+        const count = await deleteCoursesById(req.params.courseId)
+        if(count) {
+            res.status(204).end();
+        }
+        else {
+            next();
+        }
     }
     else {
-        next();
+        res.status(403).send({
+            error: "The request was not made by an admin"
+        })
     }
 })
 
