@@ -187,20 +187,17 @@ exports.courseEnrollment = async function courseEnrollment(id, body) {
 
 exports.getListStudentInCourse = async function getListStudentInCourse(id) { 
   const db = getDbInstance();
-  const collection =  db.collection("courses");
-  const users = await collection.aggregate([
-    { $match: { _id: new ObjectId(id) } },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "courses",
-        as: "students",
-      },
-    },
-  ]).toArray();
-  return users;
+  const collection =  db.collection("users");
+  const users = await collection
+    .find({ role: "student", courses: ObjectId(id) })
+    .project({ courses: 0 });
+  return users.toArray();
 };
+
+exports.getInstructorId = async function getInstructorId(courseId) {
+    const course = await getCourseById(courseId)
+    return course.instructorId
+}
 
 exports.bulkInsertNewCourses = async function bulkInsertNewCourses(courses) {
     const coursesToInsert = courses.map(course => {

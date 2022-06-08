@@ -6,6 +6,9 @@ const fs = require('fs/promises')
 const { validateAgainstSchema } = require("../lib/validation");
 const { fileTypes } = require("../lib/fileTypes");
 const { submissionSchema, insertNewSubmission, getSubmissionById, updateSubmissionGradeById } = require("../models/submission");
+const { requireAuthentication } = require("../lib/auth");
+const { getListStudentInCourse } = require("../models/course");
+const { getAssignmentById } = require("../models/assignment");
 
 const router = Router()
 
@@ -24,33 +27,62 @@ const upload = multer({
 })
 
 
-router.post('/', upload.single('file'), async function (req, res, next) {
+router.post('/', requireAuthentication, upload.single('file'), async function (req, res, next) {
     if(validateAgainstSchema(req.body, submissionSchema)) {
         try {
-            // Submission object, exclude grade. Grade should only be entered when update.
-            const submission = {
-                assignmentId: req.body.assignmentId,
-                studentId: req.body.studentId,
-                timestamp: req.body.timestamp,
-                path: req.file.path,
-                filename: req.file.filename,
-                mimetype: req.file.mimetype
-            }
-            const id = await insertNewSubmission(submission)
-            // Remove local temp file from multer
-            await fs.unlink(req.file.path)
-
-            res.status(201).send({
-                id: id,
-                links: {
-                  assignment: `/assignments/${req.body.assignmentId}`,
-                  student: `/users/${req.body.studentId}`,
-                  submission: `/submissions/${id}`
+            const assignment = await getAssignmentById(req.body.assignmentId)
+            if (req.userId === req.body.studentId) {
+                if (assignment) {
+                    const courseId = assignment.courseId
+                    const studentsInCourse = await getListStudentInCourse(courseId)
+                    let studentEnrolled = false;
+                    for (let i = 0; i < studentsInCourse.length; i++) {
+                        if (studentsInCourse[i]._id.toString() === req.userId) {
+                            studentEnrolled = true
+                        }
+                    }
+                    console.log("== studentsInCourse: ", studentsInCourse)
+                    if (studentEnrolled) {
+                        // Submission object, exclude grade. Grade should only be entered when update.
+                        const submission = {
+                            assignmentId: req.body.assignmentId,
+                            studentId: req.body.studentId,
+                            timestamp: req.body.timestamp,
+                            path: req.file.path,
+                            filename: req.file.filename,
+                            mimetype: req.file.mimetype
+                        }
+                        const id = await insertNewSubmission(submission)
+                        // Remove local temp file from multer
+                        await fs.unlink(req.file.path)
+            
+                        res.status(201).send({
+                            id: id,
+                            links: {
+                            assignment: `/assignments/${req.body.assignmentId}`,
+                            student: `/users/${req.body.studentId}`,
+                            submission: `/submissions/${id}`
+                            }
+                        })
+                    } else {
+                        res.status(403).send({
+                            error: "Student is not enrolled in the assignment's course"
+                        })
+                    }
+                } else {
+                    res.status(404).send({
+                        error: "Specified assignmentId not found."
+                    }) 
                 }
-            })
+            } else {
+                res.status(403).send({
+                    error: "Token user is different compare to studentId in request body"
+                })
+            }
         } catch (err) {
             // Catch err when assignment with :assignmentId is not present
             // TODO: Maybe put custom error into enum
+            console.log(err)
             if(err === 'Assignment not found') {
                 res.status(404).send({
                     error: `Assignment with id: ${req.params.assignmentId} not found`
