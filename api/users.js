@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs')
 const { Router } = require('express')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { generateAuthToken, isUserAdmin, requireAuthenticationFunction } = require('../lib/auth')
+const { generateAuthToken, isUserAdmin, requireAuthenticationFunction, requireAuthentication } = require('../lib/auth')
 const { userSchema, checkEmailUnique, insertNewUser, getUserByEmail, getUserById } = require('../models/user')
 
 const router = Router()
@@ -63,12 +63,21 @@ router.post('/login', async function (req, res, next) {
 router.get('/:userId', async function (req, res, next) {
     const user = await getUserById(req.params.userId)
     if (user) {
-        res.status(200).send({
-            name: user.name,
-            email: user.email,
-            password: user.password,
-            role: user.role
-        })
+        userIdFromToken = requireAuthenticationFunction(req,res)
+        if (req.params.userId == userIdFromToken) {
+            res.status(200).send({
+                name: user.name,
+                email: user.email,
+                password: user.password,
+                role: user.role,
+                courses: user.courses,
+            })
+        }
+        else {
+            res.status(403).send({
+                error: "The token is either invalid or doesn't match the user credintials"
+            })
+        }
     }
     else {
         res.status(404).send({
