@@ -151,7 +151,7 @@ router.get('/:courseId/students', async function (req, res, next) {
     const course = await getListStudentInCourse(req.params.courseId)
     if (course) {
         res.status(200).send({
-            student: course
+            students: course
         })
     }
     else {
