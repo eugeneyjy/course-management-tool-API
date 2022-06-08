@@ -1,4 +1,4 @@
-const { ObjectId } = require('mongodb')
+const { ObjectId, GridFSBucket } = require('mongodb')
 const { getDbInstance } = require('../lib/mongo')
 const { extractValidFields } = require('../lib/validation')
 
@@ -57,6 +57,19 @@ exports.updateAssignmentById = async function updateAssignmentById(assignmentId,
     {
         return null
     }
+}
+
+exports.deleteAssignmentById = async function deleteAssignmentById(id) {
+    const db = getDbInstance()
+    const assignments = db.collection('assignments')
+    const submissions = db.collection('submissions.files')
+    const bucket = new GridFSBucket(db, { bucketName: 'submissions' })
+    await assignments.remove({ _id: ObjectId(id) })
+    await submissions
+        .find({ "metadata.assignmentId": ObjectId(id) })
+        .forEach(submission => {
+            bucket.delete(submission._id)
+        })
 }
 
 exports.bulkInsertNewAssignments = async function bulkInsertNewAssignments(assignments) {

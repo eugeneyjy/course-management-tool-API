@@ -4,7 +4,7 @@ const crypto = require('crypto')
 const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
+const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById, deleteAssignmentById } = require('../models/assignment')
 const { getPaginatedSubmissionsByAidAndSid, getPaginatedSubmissionsByAid } = require('../models/submission')
 const { fileTypes } = require('../lib/fileTypes')
 const { requireAuthentication, isUserAdmin } = require('../lib/auth')
@@ -103,14 +103,29 @@ router.patch('/:assignmentId',requireAuthentication, async function (req, res, n
 })
 
 // Remove a specific Assignment from the database.
-router.delete('/:assignmentId',function (req, res, next) {
-    // PRETEND THIS IS CODE FINDING THE ASSIGNMENT
-    // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF ASSIGNMENT EXISTS IN THE DATABASE
-    res.status(204).send({})
-    // PRETEND THIS IS THE ELSE PART
-    // res.status(404).send({
-    //     error: "Specified assignmentId not found."
-    // })
+router.delete('/:assignmentId', requireAuthentication, async function (req, res, next) {
+    try {
+        const assignmentId = req.params.assignmentId
+        const assignment = await getAssignmentById(assignmentId)
+        if (assignment) {
+            const isAdmin = await isUserAdmin(req.userId)
+            const isInstructor = (await getInstructorId(assignment.courseId)).toString() === req.userId
+            if (isAdmin || isInstructor) {
+                await deleteAssignmentById(assignmentId)
+                res.status(204).send({})
+            } else {
+                res.status(403).send({
+                    error: "The request was not made by an admin or the instructor of the course"
+                })
+            }
+        } else {
+            res.status(404).send({
+                error: "Specified assignmentId not found."
+            })
+        }
+    } catch (err) {
+        next(err)
+    }
 })
 
 // Fetch the list of all Submissions for an Assignment.
