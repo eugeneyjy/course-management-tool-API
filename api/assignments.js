@@ -7,6 +7,8 @@ const { validateAgainstSchema } = require('../lib/validation')
 const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
 const { getPaginatedSubmissionsByAidAndSid, getPaginatedSubmissionsByAid } = require('../models/submission')
 const { fileTypes } = require('../lib/fileTypes')
+const { requireAuthentication, isUserAdmin } = require('../lib/auth')
+const { getCourseById } = require('../models/course')
 
 const router = Router()
 
@@ -25,12 +27,22 @@ const upload = multer({
 })
 
 // Create a new Assignment.
-router.post('/', async function (req, res, next) {
+router.post('/',requireAuthentication, async function (req, res, next) {
     if (validateAgainstSchema(req.body, assignmentSchema)) {
-        const id = await insertNewAssignment(req.body)
-        res.status(201).send({
-            id: id
-        })
+        const admin = await isUserAdmin(req.userId)
+        const course = await getCourseById(req.body.courseId)
+
+        if(admin || course.instructorId == req.userId) {
+            const id = await insertNewAssignment(req.body)
+            res.status(201).send({
+                id: id
+            })
+        }
+        else {
+            res.status(403).send({
+                error: "The request was not made by an admin or the instructor of the course"
+            })
+        }
     } 
     else {
         res.status(400).send({
@@ -58,7 +70,7 @@ router.get('/:assignmentId', async function (req, res, next) {
 })
 
 // Update data for a specific Assignment.
-router.patch('/:assignmentId', async function (req, res, next) {
+router.patch('/:assignmentId',requireAuthentication, async function (req, res, next) {
     const assignment = await getAssignmentById(req.params.assignmentId)
     if(assignment === null){
         res.status(404).json({
@@ -66,12 +78,21 @@ router.patch('/:assignmentId', async function (req, res, next) {
         })
     }
     if (validateAgainstSchema(req.body, assignmentSchema)) {
-        const updateSuccessful = await updateAssignmentById(req.params.assignmentId, req.body)
-        if (updateSuccessful) {
-        res.status(200).send()
-        } 
+        const admin = await isUserAdmin(req.userId)
+        const course = await getCourseById(req.body.courseId)
+        if(admin || course.instructorId == req.userId) {
+            const updateSuccessful = await updateAssignmentById(req.params.assignmentId, req.body)
+            if (updateSuccessful) {
+            res.status(200).send()
+            } 
+            else {
+                next()
+            }
+        }
         else {
-            next()
+            res.status(403).send({
+                error: "The request was not made by an admin or the instructor of the course"
+            })
         }
     }
     else {
