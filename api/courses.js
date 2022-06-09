@@ -193,12 +193,13 @@ router.get('/:courseId/roster', requireAuthentication, async function (req, res,
         try{
             const processedData = getProcessedStudentInfo(data)
             console.log(processedData)
-            fs.writeFileSync('./api/uploads/roster.csv', processedData.toString, err => {
+            fs.writeFileSync('./api/uploads/roster.csv', processedData, err => {
                 console.log(err)
             })
             res.attachment('roster.csv')
             res.status(200).send(processedData)
         } catch (err) {
+            console.log(err)
             res.status(500).send({error: 'Unable to export to CSV. Please try again.'})
         }
     } else {
