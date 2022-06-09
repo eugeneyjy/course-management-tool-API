@@ -9,6 +9,7 @@ const { getPaginatedSubmissionsByAidAndSid, getPaginatedSubmissionsByAid } = req
 const { fileTypes } = require('../lib/fileTypes')
 const { requireAuthentication, isUserAdmin } = require('../lib/auth')
 const { getCourseById, getInstructorId } = require('../models/course')
+const { rateLimit } = require('../lib/rateLimiting')
 
 const router = Router()
 
