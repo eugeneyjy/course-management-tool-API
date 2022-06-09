@@ -213,3 +213,11 @@ exports.bulkInsertNewCourses = async function bulkInsertNewCourses(courses) {
     const result = await collection.insertMany(coursesToInsert)
     return result.insertedIds
 }
+
+exports.getProcessedStudentInfo = function(data){
+  var csv = "ID,name,email\n";
+  for(var i = 0;i<data.length;i++){
+      csv += data[i].id + "," + data[i].name + "," + data[i].email + "\n";
+  }
+  return csv;
+};

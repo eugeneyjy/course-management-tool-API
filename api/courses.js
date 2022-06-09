@@ -1,13 +1,18 @@
-const { Router } = require('express')
+// const { Router } = require('express')
+const Router = require('express')
 const { requireAuthentication } = require('../lib/auth')
+const fs = require('fs')
 
 // const { } = require('../lib/validation')
 // const {} = require('../models/course')
 const { validateAgainstSchema } = require('../lib/validation')
-const { courseSchema, insertNewCourse, getCourseById, updateCourseById, getAllCourses, getCorrectData, getSubjectData, getNumberData, getTermData, getAssignmentsByCourseId, deleteCoursesById, courseEnrollment, getListStudentInCourse } = require('../models/course')
+const { courseSchema, insertNewCourse, getCourseById, updateCourseById, getAllCourses, getCorrectData, getSubjectData, getNumberData, getTermData, getAssignmentsByCourseId, deleteCoursesById, courseEnrollment, getListStudentInCourse, getProcessedStudentInfo } = require('../models/course')
+const { getUserRole, getUserById } = require('../models/user')
 
 
 const router = Router()
+
+router.use('/api/uploads', Router.static(__dirname + '/api/uploads'))
 
 // Fetch the list of all courses.
 router.get('/', async function (req, res, next) {
@@ -32,13 +37,13 @@ router.get('/', async function (req, res, next) {
         links.prevPage = `/courses?page=${page - 1}`;
         links.firstPage = `/courses?page=1`;
     }
-    if(subject) {
+    if (subject) {
         pageCourses = await getSubjectData(subject);
     }
-    if(number) {
+    if (number) {
         pageCourses = await getNumberData(number);
     }
-    if(term) {
+    if (term) {
         pageCourses = await getTermData(term);
     }
     res.status(200).json({
@@ -112,7 +117,7 @@ router.patch('/:courseId', async function (req, res, next) {
 // Remove a specific Course from the database.
 router.delete('/:courseId', async function (req, res, next) {
     const count = await deleteCoursesById(req.params.courseId)
-    if(count) {
+    if (count) {
         res.status(204).end();
     }
     else {
@@ -121,45 +126,86 @@ router.delete('/:courseId', async function (req, res, next) {
 })
 
 // Fetch a list of the students enrolled in the Course.
-router.get('/:courseId/students', async function (req, res, next) {
+router.get('/:courseId/students', requireAuthentication, async function (req, res, next) {
     const course = await getListStudentInCourse(req.params.courseId)
-    if (course) {
-        res.status(200).send({
-            student: course
-        })
-    }
-    else {
-        res.status(404).send({
-            error: "Specified courseId not found."
+    const user = await getUserById(req.userId)
+    if (user.role == "admin" || (user.role == "instructor" && req.userId == course[0].instructorId)) {
+        if (course) {
+            res.status(200).send({
+                student: course
+            })
+        }
+        else {
+            res.status(404).send({
+                error: "Specified courseId not found."
+            })
+        }
+    } else {
+        res.status(403).send({
+            error: "The request was not made by an authenticated User satisfying the authorization criteria described above.",
         })
     }
 })
 
 // Enrollment for a Course.
 // body: studentId
-router.post('/:courseId/students', async function (req, res, next) {
-    try {
-        const result = await courseEnrollment(req.params.courseId, req.body);
-        if(result.length == 0) {
-            res.status(200).send({
-                msg: `Enrolled sucessfully`
-            })
-        }
-        else if(result.length != 0) {
-            res.status(400).send({
-                error: "User " + result + " trying to enroll the same course"
-            })
-        }
-    }catch(err) {
-        throw err
+router.post('/:courseId/students', requireAuthentication, async function (req, res, next) {
+    const user = await getUserById(req.userId)
+    const course = await getListStudentInCourse(req.params.courseId)
+    if (user.role == "admin" || (user.role == "instructor" && req.userId == course[0].instructorId)) {
+        try {
+            const result = await courseEnrollment(req.params.courseId, req.body);
+            if (result.length == 0) {
+                res.status(200).send({
+                    msg: `Enrolled sucessfully`
+                })
+            }
+            else if (result.length != 0) {
+                res.status(400).send({
+                    error: "User " + result + " trying to enroll the same course"
+                })
+            }
+        } catch (err) {
+            throw err
+        }   
+    } else {
+        res.status(403).send({
+            error: "The request was not made by an authenticated User satisfying the authorization criteria described above.",
+        })
     }
 })
 
 // Fetch a CSV file containing list of the students enrolled in the Course.
-router.get('/:courseId/roster', requireAuthentication, function (req, res, next) {
-    res.status(201).send({
-        msg: `REQUEST RECEIVED`
-    })
+router.get('/:courseId/roster', requireAuthentication, async function (req, res, next) {
+    const user = await getUserById(req.userId)
+    const course = await getCourseById(req.params.courseId)
+    const students = await getListStudentInCourse(req.params.courseId)
+    if (user.role == "admin" || (user.role == "instructor" && req.userId == course[0].instructorId)) {
+        var data = []
+        for (var i = 0; i < students[0].students.length; i++) {
+            var temp = {
+                id: students[0].students[i]._id,
+                name: students[0].students[i].name,
+                email: students[0].students[i].email,
+            }
+            data.push(temp)
+        }
+        try{
+            const processedData = getProcessedStudentInfo(data)
+            console.log(processedData)
+            fs.writeFileSync('./api/uploads/roster.csv', processedData.toString, err => {
+                console.log(err)
+            })
+            res.attachment('roster.csv')
+            res.status(200).send(processedData)
+        } catch (err) {
+            res.status(500).send({error: 'Unable to export to CSV. Please try again.'})
+        }
+    } else {
+        res.status(403).send({
+            error: "The request was not made by an authenticated User satisfying the authorization criteria described above.",
+        })
+    }
 })
 
 // Fetch a list of the Assignments for the Course.
@@ -167,8 +213,8 @@ router.get('/:courseId/assignments', async function (req, res, next) {
     const courseId = req.params.courseId
     const assignments = await getAssignmentsByCourseId(courseId)
     //if statment technically wrong cause there could be a class but no assignments yet
-    if(assignments.length > 0) {
-        for(var i = 0; i < assignments.length; i++) {
+    if (assignments.length > 0) {
+        for (var i = 0; i < assignments.length; i++) {
             newData = {
                 courseId: assignments[i].courseId,
                 title: assignments[i].title,
