@@ -139,7 +139,7 @@ exports.getAssignmentsByCourseId = async function getAssignmentsByCourseId(id) {
   const db = getDbInstance();
   const collection = db.collection("assignments");
   const assignments = await collection
-    .aggregate([{ $match: { _id: new ObjectId(id) } }])
+    .aggregate([{ $match: { courseId: new ObjectId(id) } }])
     .toArray();
   return assignments;
 };

@@ -239,15 +239,15 @@ router.get('/:courseId/assignments', async function (req, res, next) {
     const assignments = await getAssignmentsByCourseId(courseId)
     //if statment technically wrong cause there could be a class but no assignments yet
     if (assignments.length > 0) {
-        for (var i = 0; i < assignments.length; i++) {
-            newData = {
-                courseId: assignments[i].courseId,
-                title: assignments[i].title,
-                points: assignments[i].points,
-                due: assignments[i].due
-            }
-            assignments[i] = newData
-        }
+        // for (var i = 0; i < assignments.length; i++) {
+        //     newData = {
+        //         courseId: assignments[i].courseId,
+        //         title: assignments[i].title,
+        //         points: assignments[i].points,
+        //         due: assignments[i].due
+        //     }
+        //     assignments[i] = newData
+        // }
         res.status(200).json({
             assignments: assignments
         })
