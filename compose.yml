@@ -23,6 +23,9 @@ services:
     restart: on-failure
     command: npm run initDb
 
+  redis-server:
+    image: redis
+
   api:
     build: .
     ports:
@@ -32,7 +35,10 @@ services:
       MONGO_USER: ${MONGO_USER}
       MONGO_PASSWORD: ${MONGO_PASSWORD}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+      REDIS_HOST: redis-server
+      REDIS_PORT: 6379
     depends_on:
       - db
       - db-init
+      - redis
     restart: on-failure

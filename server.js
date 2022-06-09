@@ -2,6 +2,8 @@ const express = require('express')
 
 const api = require('./api')
 const { connectToDb } = require('./lib/mongo')
+const { rateLimit } = require('./lib/rateLimiting')
+const { connectToRedis } = require('./lib/redis')
 
 const app = express()
 const port = process.env.PORT || 8000
@@ -17,6 +19,8 @@ app.use(function (req, res, next) {
     console.log("  - BODY:",req.body)
     next()
 })
+
+app.use('/', rateLimit)
 
 // app.listen(port, function () {
 //     console.log("== Server is listening on port:", port)
@@ -39,6 +43,7 @@ app.use('*', function (err, req, res, next) {
 
 connectToDb(function () {
   app.listen(port, function () {
+      connectToRedis()
       console.log("== Server is listening on port:", port)
   })
 })
