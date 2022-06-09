@@ -206,11 +206,11 @@ router.get('/:courseId/roster', requireAuthentication, async function (req, res,
     const students = await getListStudentInCourse(req.params.courseId)
     if (user.role == "admin" || (user.role == "instructor" && req.userId == course[0].instructorId)) {
         var data = []
-        for (var i = 0; i < students[0].students.length; i++) {
+        for (var i = 0; i < students.length; i++) {
             var temp = {
-                id: students[0].students[i]._id,
-                name: students[0].students[i].name,
-                email: students[0].students[i].email,
+                id: students[i]._id,
+                name: students[i].name,
+                email: students[i].email,
             }
             data.push(temp)
         }

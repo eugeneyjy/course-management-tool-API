@@ -40,5 +40,5 @@ services:
     depends_on:
       - db
       - db-init
-      - redis
+      - redis-server
     restart: on-failure
