@@ -4,9 +4,12 @@ const crypto = require('crypto')
 const fs = require('fs/promises')
 
 const { validateAgainstSchema } = require('../lib/validation')
-const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById } = require('../models/assignment')
+const { assignmentSchema, insertNewAssignment, getAssignmentById, updateAssignmentById, deleteAssignmentById } = require('../models/assignment')
 const { getPaginatedSubmissionsByAidAndSid, getPaginatedSubmissionsByAid } = require('../models/submission')
 const { fileTypes } = require('../lib/fileTypes')
+const { requireAuthentication, isUserAdmin } = require('../lib/auth')
+const { getCourseById, getInstructorId } = require('../models/course')
+const { rateLimit } = require('../lib/rateLimiting')
 
 const router = Router()
 
@@ -25,12 +28,22 @@ const upload = multer({
 })
 
 // Create a new Assignment.
-router.post('/', async function (req, res, next) {
+router.post('/',requireAuthentication, async function (req, res, next) {
     if (validateAgainstSchema(req.body, assignmentSchema)) {
-        const id = await insertNewAssignment(req.body)
-        res.status(201).send({
-            id: id
-        })
+        const admin = await isUserAdmin(req.userId)
+        const course = await getCourseById(req.body.courseId)
+
+        if(admin || course.instructorId == req.userId) {
+            const id = await insertNewAssignment(req.body)
+            res.status(201).send({
+                id: id
+            })
+        }
+        else {
+            res.status(403).send({
+                error: "The request was not made by an admin or the instructor of the course"
+            })
+        }
     } 
     else {
         res.status(400).send({
@@ -58,7 +71,7 @@ router.get('/:assignmentId', async function (req, res, next) {
 })
 
 // Update data for a specific Assignment.
-router.patch('/:assignmentId', async function (req, res, next) {
+router.patch('/:assignmentId',requireAuthentication, async function (req, res, next) {
     const assignment = await getAssignmentById(req.params.assignmentId)
     if(assignment === null){
         res.status(404).json({
@@ -66,12 +79,21 @@ router.patch('/:assignmentId', async function (req, res, next) {
         })
     }
     if (validateAgainstSchema(req.body, assignmentSchema)) {
-        const updateSuccessful = await updateAssignmentById(req.params.assignmentId, req.body)
-        if (updateSuccessful) {
-        res.status(200).send()
-        } 
+        const admin = await isUserAdmin(req.userId)
+        const course = await getCourseById(req.body.courseId)
+        if(admin || course.instructorId == req.userId) {
+            const updateSuccessful = await updateAssignmentById(req.params.assignmentId, req.body)
+            if (updateSuccessful) {
+            res.status(200).send()
+            } 
+            else {
+                next()
+            }
+        }
         else {
-            next()
+            res.status(403).send({
+                error: "The request was not made by an admin or the instructor of the course"
+            })
         }
     }
     else {
@@ -82,38 +104,61 @@ router.patch('/:assignmentId', async function (req, res, next) {
 })
 
 // Remove a specific Assignment from the database.
-router.delete('/:assignmentId',function (req, res, next) {
-    // PRETEND THIS IS CODE FINDING THE ASSIGNMENT
-    // PRETEND THIS IS AN IF/ELSE STATEMENT CHECKING IF ASSIGNMENT EXISTS IN THE DATABASE
-    res.status(204).send({})
-    // PRETEND THIS IS THE ELSE PART
-    // res.status(404).send({
-    //     error: "Specified assignmentId not found."
-    // })
+router.delete('/:assignmentId', requireAuthentication, async function (req, res, next) {
+    try {
+        const assignmentId = req.params.assignmentId
+        const assignment = await getAssignmentById(assignmentId)
+        if (assignment) {
+            const isAdmin = await isUserAdmin(req.userId)
+            const isInstructor = (await getInstructorId(assignment.courseId)).toString() === req.userId
+            if (isAdmin || isInstructor) {
+                await deleteAssignmentById(assignmentId)
+                res.status(204).send({})
+            } else {
+                res.status(403).send({
+                    error: "The request was not made by an admin or the instructor of the course"
+                })
+            }
+        } else {
+            res.status(404).send({
+                error: "Specified assignmentId not found."
+            })
+        }
+    } catch (err) {
+        next(err)
+    }
 })
 
 // Fetch the list of all Submissions for an Assignment.
-router.get('/:assignmentId/submissions', async function (req, res, next) {
+router.get('/:assignmentId/submissions', requireAuthentication, async function (req, res, next) {
     try {
         const assignmentId = req.params.assignmentId
         const studentId = req.query.studentId
         const assignment = await getAssignmentById(assignmentId)
         if (assignment) {
-            let paginatedSubmissions = null
-            let page = parseInt(req.query.page) || 1;
-            page = page < 1 ? 1 : page;
-            const countPerPage = 10;
-            const start = (page - 1) * countPerPage;
-            if(studentId) {
-                paginatedSubmissions = await getPaginatedSubmissionsByAidAndSid(
-                    assignmentId, studentId, start, countPerPage
-                )
+            const isAdmin = await isUserAdmin(req.userId)
+            const isInstructor = (await getInstructorId(assignment.courseId)).toString() === req.userId
+            if (isAdmin || isInstructor) {
+                let paginatedSubmissions = null
+                let page = parseInt(req.query.page) || 1;
+                page = page < 1 ? 1 : page;
+                const countPerPage = 10;
+                const start = (page - 1) * countPerPage;
+                if(studentId) {
+                    paginatedSubmissions = await getPaginatedSubmissionsByAidAndSid(
+                        assignmentId, studentId, start, countPerPage
+                    )
+                } else {
+                    paginatedSubmissions = await getPaginatedSubmissionsByAid(
+                        assignmentId, start, countPerPage
+                    )
+                }
+                res.status(200).send(paginatedSubmissions)
             } else {
-                paginatedSubmissions = await getPaginatedSubmissionsByAid(
-                    assignmentId, start, countPerPage
-                )
+                res.status(403).send({
+                    error: "The request was not made by an admin or the instructor of the course"
+                })
             }
-            res.status(200).send(paginatedSubmissions)
         } else {
             res.status(404).send({
                 error: "Specified assignmentId not found."

@@ -57,16 +57,24 @@ router.get('/', async function (req, res, next) {
 })
 
 // Create a new course.
-router.post('/', async function (req, res, next) {
-    if (validateAgainstSchema(req.body, courseSchema)) {
-        const id = await insertNewCourse(req.body)
-        res.status(201).send({
-            id: id
-        })
+router.post('/', requireAuthentication, async function (req, res, next) {
+    const admin = await isUserAdmin(req.userId)
+    if (admin) {
+        if (validateAgainstSchema(req.body, courseSchema)) {
+            const id = await insertNewCourse(req.body)
+            res.status(201).send({
+                id: id
+            })
+        }
+        else {
+            res.status(400).send({
+                error: "The request body was either not present or did not contain a course object"
+            })
+        }
     }
-    else {
-        res.status(400).send({
-            error: "The request body was either not present or did not contain a course object"
+    else{
+        res.status(403).send({
+            error: "The request was not made by an admin"
         })
     }
 })
@@ -91,37 +99,53 @@ router.get('/:courseId', async function (req, res, next) {
 })
 
 // Update data for a specific Course.
-router.patch('/:courseId', async function (req, res, next) {
+router.patch('/:courseId', requireAuthentication, async function (req, res, next) {
     const course = await getCourseById(req.params.courseId)
     if (course === null) {
         res.status(404).json({
             error: "Specified courseId not found."
         })
     }
-    if (validateAgainstSchema(req.body, courseSchema)) {
-        const updateSuccessful = await updateCourseById(req.params.courseId, req.body)
-        if (updateSuccessful) {
-            res.status(200).send()
+    const admin = await isUserAdmin(req.userId)
+    if (admin || course.instructorId == req.userId){
+        if (validateAgainstSchema(req.body, courseSchema)) {
+            const updateSuccessful = await updateCourseById(req.params.courseId, req.body)
+            if (updateSuccessful) {
+                res.status(200).send()
+            }
+            else {
+                next()
+            }
         }
         else {
-            next()
+            res.status(400).json({
+                error: "Request body is not a valid course object"
+            })
         }
     }
     else {
-        res.status(400).json({
-            error: "Request body is not a valid course object"
+        res.status(403).send({
+            error: "The request was not made by an admin or the instructor of the course"
         })
     }
 })
 
 // Remove a specific Course from the database.
-router.delete('/:courseId', async function (req, res, next) {
-    const count = await deleteCoursesById(req.params.courseId)
-    if (count) {
-        res.status(204).end();
+router.delete('/:courseId', requireAuthentication, async function (req, res, next) {
+    const admin = await isUserAdmin(req.userId)
+    if(admin) {
+        const count = await deleteCoursesById(req.params.courseId)
+        if(count) {
+            res.status(204).end();
+        }
+        else {
+            next();
+        }
     }
     else {
-        next();
+        res.status(403).send({
+            error: "The request was not made by an admin"
+        })
     }
 })
 
